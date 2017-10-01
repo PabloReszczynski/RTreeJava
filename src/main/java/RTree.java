@@ -8,22 +8,18 @@ public class RTree implements Serializable {
 
     private int id;
     private ArrayList<Integer> children;
-    private ArrayList<Rectangle2D> rectangles;
+    public ArrayList<Rectangle2D> rectangles;
     private boolean empty;
+    private int M;
 
-    public RTree () {
+    public RTree (int M) {
         this.children = new ArrayList<Integer>();
         this.id = -1;
         this.empty = true;
     }
 
-    public RTree(Envelope env) {
-        double x = env.getXMin();
-        double y = env.getYMax();
-        double width = env.getWidth();
-        double height = env.getHeight();
-
-        Rectangle2D rect = new Rectangle2D.Double(x, y, width, height);
+    public RTree(Envelope env, int M) {
+        Rectangle2D rect = rectFromEnvelope(env);
 
         this.id = env.hashCode();
         this.children = new ArrayList<Integer>();
@@ -34,6 +30,12 @@ public class RTree implements Serializable {
 
 
     public void insert(RTree branch) {
+
+    }
+
+    public void insert(Envelope env) {
+        /* Inserta un rectangulo en la lista de MBRs. Aquí se debe verificar si existe overflow */
+        rectangles.add(rectFromEnvelope(env));
 
     }
 
@@ -54,5 +56,15 @@ public class RTree implements Serializable {
         in.close();
         file.close();
         return node;
+    }
+
+    private static Rectangle2D rectFromEnvelope(Envelope env) {
+        double x = env.getXMin();
+        double y = env.getYMax();
+        double width = env.getWidth();
+        double height = env.getHeight();
+
+        return new Rectangle2D.Double(x, y, width, height);
+
     }
 }

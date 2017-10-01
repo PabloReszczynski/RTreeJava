@@ -1,6 +1,12 @@
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Polygon;
 import com.esri.shp.ShpReader;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import java.io.*;
 
@@ -9,12 +15,29 @@ public class RTreeGenerator {
      *  Generates an RTree from a BDF file
      */
 
-    public static RTree RTreeGenerator(String filename) throws FileNotFoundException {
+    public static int readConfigFile(String filename) throws IOException, SAXException, ParserConfigurationException {
+        final File file = new File(filename);
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder docBuilder= factory.newDocumentBuilder();
+        Document document = docBuilder.parse(file);
+
+        return Integer.parseInt(document.getElementsByTagName("M").item(0).getTextContent());
+    }
+
+    public static RTree RTreeGenerator(String filename) throws IOException, ParserConfigurationException, SAXException {
 
        final File file = new File(filename);
        final FileInputStream fis = new FileInputStream(file);
 
-       RTree root = new RTree();
+       int M;
+
+        try {
+            M = readConfigFile("config.xml");
+        } catch (Exception e) {
+            throw e;
+        }
+
+        RTree root = new RTree(M);
 
        try {
            final Envelope envelope = new Envelope();
@@ -26,7 +49,7 @@ public class RTreeGenerator {
                polygon.queryEnvelope(envelope);
 
                System.out.println(envelope);
-               root.insert(new RTree(envelope));
+               root.insert(envelope);
            }
        } catch (IOException e) {
            e.printStackTrace();
@@ -35,7 +58,7 @@ public class RTreeGenerator {
        return root;
     }
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException {
         RTree root = RTreeGenerator("shape");
     }
 }
