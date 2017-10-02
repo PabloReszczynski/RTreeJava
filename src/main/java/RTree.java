@@ -14,7 +14,11 @@ public class RTree implements Serializable {
     private int M;
     private Rectangle2D MBR;
     private OverflowHeuristic heuristic;
+
     private RTree father;
+
+    private boolean isLeaf;
+
 
     // FIXME: Pasar de 2 arreglos a un Map
 
@@ -26,10 +30,10 @@ public class RTree implements Serializable {
         this.heuristic = h;
         this.MBR = new Rectangle2D.Double();
         this.M = M;
-        this.father = null;
-        
-    }
 
+        this.father = null;
+        isLeaf = true;
+    }
     public RTree(Envelope env, int M, OverflowHeuristic h, RTree father) {
         Rectangle2D rect = rectFromEnvelope(env);
 
@@ -41,7 +45,11 @@ public class RTree implements Serializable {
         this.MBR = rect;
         this.heuristic = h;
         this.M = M;
+
         this.father = father;
+
+        isLeaf = true;
+
     }
 
     public RTree(Rectangle2D rect, int M, OverflowHeuristic h, RTree father) {
@@ -53,7 +61,9 @@ public class RTree implements Serializable {
         this.MBR = rect;
         this.heuristic = h;
         this.M = M;
+        
         this.father = father;
+        isLeaf = true;
     }
 
 
@@ -82,6 +92,7 @@ public class RTree implements Serializable {
 
             if (rectangles.size() >= M) {
                 heuristic.divideTree(this);
+                notLeaf();
             }
     	}
     	else { // si no es hoja
@@ -90,17 +101,29 @@ public class RTree implements Serializable {
     		
     		//escojo el MBR (entre los hijos)  que deba crecer lo menos posible
     		for (Integer child : children){
-    			//obtengo nodo 
-    			RTree childNode = readNode(child);
-    			Rectangle2D union = (childNode.MBR).createUnion(rect); //MBR de la union
-    			double childNodeArea = (childNode.MBR).getWidth() * (childNode.MBR).getHeight();
-    			double unionArea = union.getHeight() * union.getWidth();
-    			if (growth<0 ||  (unionArea-childNodeArea)<growth ){
-    				lessGrowthNode = childNode;
-    				growth = unionArea-childNodeArea;
-    			}
+    			//obtengo nodo
+                try {
+
+                    System.out.println("child " + child);
+                    RTree childNode = readNode(child);
+                    Rectangle2D union = (childNode.MBR).createUnion(rect); //MBR de la union
+                    double childNodeArea = (childNode.MBR).getWidth() * (childNode.MBR).getHeight();
+                    double unionArea = union.getHeight() * union.getWidth();
+                    if (growth < 0 || (unionArea - childNodeArea) < growth) {
+                        lessGrowthNode = childNode;
+                        growth = unionArea - childNodeArea;
+                    }
+                } catch (FileNotFoundException e) {
+                    continue;
+                } catch (ClassNotFoundException e) {
+                    continue;
+                }
     		}
     		lessGrowthNode.insert(rect);
+    		
+    		if (lessGrowthNode != null) {
+                lessGrowthNode.insert(rect);
+            }
     	}
         
     }
@@ -132,6 +155,10 @@ public class RTree implements Serializable {
 
     public void resetRectangles() {
         rectangles = new ArrayList<Rectangle2D>();
+    }
+
+    public void notLeaf() {
+        isLeaf = false;
     }
 
     // Funciones estaticas
