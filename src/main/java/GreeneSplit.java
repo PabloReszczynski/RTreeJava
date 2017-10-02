@@ -58,11 +58,35 @@ public class GreeneSplit implements OverflowHeuristic, Serializable {
         for (int i=0; i<=((node.getM()/2) -1); i++){
         	leftNode.insert(rectangles.get(i));
         }
-        for (int i=(node.getM()/2); i<=(node.getM() + 1); i++){
+        for (int i=(node.getM()/2); i<(node.getM()); i++){
         	rightNode.insert(rectangles.get(i));
         }
         
-        
+        // Reseteamos los hijos y agregamos los 2 nuevos nodos
+        node.resetChildren();
+        node.resetRectangles();
+
+        // Guardamos en disco el nodo y los hijos
+        //y el padre
+
+        if (node.getFather() != node){
+            (node.getFather()).insert(leftNode.getMBR());
+            (node.getFather()).insert(rightNode.getMBR());
+            
+            RTree.deleteNode(node);
+            
+            RTree.writeNode(leftNode);
+            RTree.writeNode(rightNode);
+            RTree.writeNode(node.getFather());
+        }
+        else{
+        	node.insert(leftNode.getMBR());
+            node.insert(rightNode.getMBR());
+            
+            RTree.writeNode(leftNode);
+            RTree.writeNode(rightNode);
+            RTree.writeNode(node);
+        }
 	}
 
 }
