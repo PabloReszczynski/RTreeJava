@@ -37,7 +37,7 @@ public class RTreeGenerator {
             throw e;
         }
 
-        RTree root = new RTree(M);
+        RTree root = new RTree(M, new LinearSplit());
 
        try {
            final Envelope envelope = new Envelope();

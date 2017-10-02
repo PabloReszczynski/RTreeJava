@@ -1,5 +1,6 @@
 import com.esri.core.geometry.Envelope;
 
+import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.util.ArrayList;
@@ -8,17 +9,22 @@ public class RTree implements Serializable {
 
     private int id;
     private ArrayList<Integer> children;
-    public ArrayList<Rectangle2D> rectangles;
+    private ArrayList<Rectangle2D> rectangles;
     private boolean empty;
     private int M;
+    private Rectangle2D MBR;
+    private OverflowHeuristic heuristic;
 
-    public RTree (int M) {
+    // FIXME: Pasar de 2 arreglos a un Map
+
+    public RTree (int M, OverflowHeuristic h) {
         this.children = new ArrayList<Integer>();
         this.id = -1;
         this.empty = true;
+        this.heuristic = h;
     }
 
-    public RTree(Envelope env, int M) {
+    public RTree(Envelope env, int M, OverflowHeuristic h) {
         Rectangle2D rect = rectFromEnvelope(env);
 
         this.id = env.hashCode();
@@ -26,17 +32,65 @@ public class RTree implements Serializable {
         this.rectangles = new ArrayList<Rectangle2D>();
 
         this.rectangles.add(rect);
+        this.MBR = rect;
+        this.heuristic = h;
+    }
+
+    public RTree(Rectangle2D rect, int M, OverflowHeuristic h) {
+        this.id = rect.hashCode();
+        this.children = new ArrayList<Integer>();
+        this.rectangles = new ArrayList<Rectangle2D>();
+
+        this.rectangles.add(rect);
+        this.MBR = rect;
     }
 
 
-    public void insert(RTree branch) {
-
+    public int getM() {
+        return M;
     }
 
-    public void insert(Envelope env) {
+    public void insert(Envelope env) throws IOException {
         /* Inserta un rectangulo en la lista de MBRs. Aquí se debe verificar si existe overflow */
-        rectangles.add(rectFromEnvelope(env));
+        Rectangle2D rect = rectFromEnvelope(env);
+        rectangles.add(rect);
+        children.add(env.hashCode());
+        MBR = MBR.createUnion(rect);
 
+        if (rectangles.size() >= M) {
+            heuristic.divideTree(this);
+        }
+    }
+
+    public void insert(Rectangle2D rect, int id) throws IOException {
+        rectangles.add(rect);
+        children.add(id);
+        MBR = MBR.createUnion(rect);
+
+        if (rectangles.size() >= M) {
+            heuristic.divideTree(this);
+        }
+    }
+
+    // Getters
+    public ArrayList<Integer> getChildren() {
+        return children;
+    }
+
+    public ArrayList<Rectangle2D> getRectangles() {
+        return rectangles;
+    }
+
+    public OverflowHeuristic getHeuristic() {
+        return heuristic;
+    }
+
+    public void resetChildren() {
+        children = new ArrayList<Integer>();
+    }
+
+    public void resetRectangles() {
+        rectangles = new ArrayList<Rectangle2D>();
     }
 
     public static void writeNode(RTree node) throws IOException {

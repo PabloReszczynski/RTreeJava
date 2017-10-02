@@ -1,9 +1,5 @@
-public abstract class OverflowHeuristic {
-    protected RTree node;
+import java.io.IOException;
 
-    public OverflowHeuristic(RTree node) {
-        this.node = node;
-    }
-
-    public abstract void divideTree();
+public interface OverflowHeuristic {
+    void divideTree(RTree node) throws IOException;
 }
