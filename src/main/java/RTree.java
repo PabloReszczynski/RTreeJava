@@ -56,26 +56,42 @@ public class RTree implements Serializable {
         return M;
     }
 
-    public void insert(Envelope env) throws IOException {
+    public void insert(Envelope env) throws IOException, ClassNotFoundException {
         /* Inserta un rectangulo en la lista de MBRs. Aquí se debe verificar si existe overflow */
         Rectangle2D rect = rectFromEnvelope(env);
-        rectangles.add(rect);
-        children.add(env.hashCode());
-        MBR = MBR.createUnion(rect);
-
-        if (rectangles.size() >= M) {
-            heuristic.divideTree(this);
-        }
+        insert(rect, env.hashCode());
     }
 
-    public void insert(Rectangle2D rect, int id) throws IOException {
-        rectangles.add(rect);
-        children.add(id);
-        MBR = MBR.createUnion(rect);
+    public void insert(Rectangle2D rect, int id) throws IOException, ClassNotFoundException {
+    	//si es una hoja
+    	if (children.isEmpty()){
+    		rectangles.add(rect);
+            children.add(id);
+            MBR = MBR.createUnion(rect);
 
-        if (rectangles.size() >= M) {
-            heuristic.divideTree(this);
-        }
+            if (rectangles.size() >= M) {
+                heuristic.divideTree(this);
+            }
+    	}
+    	else { // si no es hoja
+    		double growth=-1;
+    		RTree lessGrowthNode = null;
+    		
+    		//escojo el MBR (entre los hijos)  que deba crecer lo menos posible
+    		for (Integer child : children){
+    			//obtengo nodo 
+    			RTree childNode = readNode(child);
+    			Rectangle2D union = (childNode.MBR).createUnion(rect); //MBR de la union
+    			double childNodeArea = (childNode.MBR).getWidth() * (childNode.MBR).getHeight();
+    			double unionArea = union.getHeight() * union.getWidth();
+    			if (growth<0 ||  (unionArea-childNodeArea)<growth ){
+    				lessGrowthNode = childNode;
+    				growth = unionArea-childNodeArea;
+    			}
+    		}
+    		lessGrowthNode.insert(rect, id);
+    	}
+        
     }
 
     // Getters
