@@ -82,12 +82,14 @@ public class RTree implements Serializable {
     	if (children.isEmpty()){
     		rectangles.add(rect);
     		
-    		if (getFather()!=null){
-    			father.children.add(getId());
-    		}
     		
             //children.add(id);
             MBR = MBR.createUnion(rect);
+            
+            if (getFather()!=null){
+    			father.children.add(getId());
+    			father.rectangles.add(MBR);
+    		}
 
             if (rectangles.size() >= M) {
                 heuristic.divideTree(this);
