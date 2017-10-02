@@ -70,12 +70,18 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
         // Reseteamos los hijos y agregamos los 2 nuevos nodos
         node.resetChildren();
         node.resetRectangles();
-        node.insert(leftNode.getMBR(), leftNode.getId());
-        node.insert(rightNode.getMBR(), rightNode.getId());
+        //node.insert(r1, r1_id);
+        //node.insert(r2, r2_id);
+        node.insert(r1);
+        node.insert(r2);
 
         // Guardamos en disco el nodo y los hijos
+        //y el padre
         RTree.writeNode(node);
         RTree.writeNode(leftNode);
         RTree.writeNode(rightNode);
+        if (node.getFather() !=null){
+        	RTree.writeNode(node.getFather());
+        }
     }
 }
