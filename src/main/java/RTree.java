@@ -3,6 +3,7 @@ import com.esri.core.geometry.Envelope;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
 
 public class RTree implements Serializable {
@@ -119,7 +120,8 @@ public class RTree implements Serializable {
                     continue;
                 }
     		}
-    		lessGrowthNode.insert(rect);
+            assert lessGrowthNode != null;
+            lessGrowthNode.insert(rect);
     		
     		if (lessGrowthNode != null) {
                 lessGrowthNode.insert(rect);
@@ -133,9 +135,6 @@ public class RTree implements Serializable {
 	}
 
 	// Getters
-    public int getId() {
-		return id;
-	}
     public ArrayList<Integer> getChildren() {
         return children;
     }
@@ -188,6 +187,13 @@ public class RTree implements Serializable {
         in.close();
         file.close();
         return node;
+    }
+
+    public static void deleteNode(RTree node) throws IOException {
+        String filename = node.id + ".ser";
+        File file = new File(filename);
+        file.delete();
+        node = null;
     }
 
     private static Rectangle2D rectFromEnvelope(Envelope env) {

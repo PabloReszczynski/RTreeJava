@@ -46,13 +46,12 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
             r1 = r1_y; r2 = r2_y;
         }
 
-        RTree leftNode = new RTree(r1, node.getM(), node.getHeuristic());
-        RTree rightNode = new RTree(r2, node.getM(), node.getHeuristic());
+        RTree leftNode = new RTree(r1, node.getM(), node.getHeuristic(), node);
+        RTree rightNode = new RTree(r2, node.getM(), node.getHeuristic(), node);
 
         // Por cada otro nodo en este nodo se agrega a r1 o a r2 dependiendo cual hace crecer el area menos.
         for (int i = 0; i < node.getRectangles().size(); i++) {
             Rectangle2D rect = node.getRectangles().get(i);
-            int id = node.getChildren().get(i);
             Rectangle2D candidate1 = r1.createUnion(rect);
             Rectangle2D candidate2 = r2.createUnion(rect);
 
@@ -60,20 +59,18 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
             double area2 = candidate2.getWidth() * candidate2.getHeight();
 
             if (area1 < area2) {
-                leftNode.insert(rect, id);
+                leftNode.insert(rect);
             }
             else {
-                rightNode.insert(rect, id);
+                rightNode.insert(rect);
             }
         }
 
         // Reseteamos los hijos y agregamos los 2 nuevos nodos
         node.resetChildren();
         node.resetRectangles();
-        //node.insert(r1, r1_id);
-        //node.insert(r2, r2_id);
-        node.insert(r1);
-        node.insert(r2);
+        node.insert(leftNode.getMBR());
+        node.insert(rightNode.getMBR());
 
         // Guardamos en disco el nodo y los hijos
         //y el padre
