@@ -1,9 +1,6 @@
-import java.awt.*;
-import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 
 public class LinearSplit implements OverflowHeuristic, Serializable {
 
