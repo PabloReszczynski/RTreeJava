@@ -3,7 +3,6 @@ import com.esri.core.geometry.Envelope;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.io.*;
-import java.nio.file.Files;
 import java.util.ArrayList;
 
 public class RTree implements Serializable {
@@ -83,13 +82,14 @@ public class RTree implements Serializable {
     	if (children.isEmpty()){
     		rectangles.add(rect);
     		
-    		//obtengo nodo padre
-    		if (getFather()!=null){
-    			father.children.add(getId());
-    		}
     		
             //children.add(id);
             MBR = MBR.createUnion(rect);
+            
+            if (getFather()!=null){
+    			father.children.add(getId());
+    			father.rectangles.add(MBR);
+    		}
 
             if (rectangles.size() >= M) {
                 heuristic.divideTree(this);
@@ -120,8 +120,7 @@ public class RTree implements Serializable {
                     continue;
                 }
     		}
-            assert lessGrowthNode != null;
-            lessGrowthNode.insert(rect);
+    		lessGrowthNode.insert(rect);
     		
     		if (lessGrowthNode != null) {
                 lessGrowthNode.insert(rect);
@@ -135,6 +134,7 @@ public class RTree implements Serializable {
 	}
 
 	// Getters
+    
     public ArrayList<Integer> getChildren() {
         return children;
     }
@@ -187,13 +187,6 @@ public class RTree implements Serializable {
         in.close();
         file.close();
         return node;
-    }
-
-    public static void deleteNode(RTree node) throws IOException {
-        String filename = node.id + ".ser";
-        File file = new File(filename);
-        file.delete();
-        node = null;
     }
 
     private static Rectangle2D rectFromEnvelope(Envelope env) {
