@@ -14,6 +14,7 @@ public class RTree implements Serializable {
     private int M;
     private Rectangle2D MBR;
     private OverflowHeuristic heuristic;
+    private RTree father;
 
     // FIXME: Pasar de 2 arreglos a un Map
 
@@ -25,9 +26,11 @@ public class RTree implements Serializable {
         this.heuristic = h;
         this.MBR = new Rectangle2D.Double();
         this.M = M;
+        this.father = null;
+        
     }
 
-    public RTree(Envelope env, int M, OverflowHeuristic h) {
+    public RTree(Envelope env, int M, OverflowHeuristic h, RTree father) {
         Rectangle2D rect = rectFromEnvelope(env);
 
         this.id = env.hashCode();
@@ -38,9 +41,10 @@ public class RTree implements Serializable {
         this.MBR = rect;
         this.heuristic = h;
         this.M = M;
+        this.father = father;
     }
 
-    public RTree(Rectangle2D rect, int M, OverflowHeuristic h) {
+    public RTree(Rectangle2D rect, int M, OverflowHeuristic h, RTree father) {
         this.id = rect.hashCode();
         this.children = new ArrayList<Integer>();
         this.rectangles = new ArrayList<Rectangle2D>();
@@ -49,6 +53,7 @@ public class RTree implements Serializable {
         this.MBR = rect;
         this.heuristic = h;
         this.M = M;
+        this.father = father;
     }
 
 
@@ -59,14 +64,20 @@ public class RTree implements Serializable {
     public void insert(Envelope env) throws IOException, ClassNotFoundException {
         /* Inserta un rectangulo en la lista de MBRs. Aquí se debe verificar si existe overflow */
         Rectangle2D rect = rectFromEnvelope(env);
-        insert(rect, env.hashCode());
+        insert(rect);
     }
 
-    public void insert(Rectangle2D rect, int id) throws IOException, ClassNotFoundException {
+    public void insert(Rectangle2D rect) throws IOException, ClassNotFoundException {
     	//si es una hoja
     	if (children.isEmpty()){
     		rectangles.add(rect);
-            children.add(id);
+    		
+    		//obtengo nodo padre
+    		if (getFather()!=null){
+    			father.children.add(getId());
+    		}
+    		
+            //children.add(id);
             MBR = MBR.createUnion(rect);
 
             if (rectangles.size() >= M) {
@@ -89,12 +100,19 @@ public class RTree implements Serializable {
     				growth = unionArea-childNodeArea;
     			}
     		}
-    		lessGrowthNode.insert(rect, id);
+    		lessGrowthNode.insert(rect);
     	}
         
     }
 
-    // Getters
+    public RTree getFather() {
+		return father;
+	}
+
+	// Getters
+    public int getId() {
+		return id;
+	}
     public ArrayList<Integer> getChildren() {
         return children;
     }
@@ -146,4 +164,5 @@ public class RTree implements Serializable {
         return new Rectangle2D.Double(x, y, width, height);
 
     }
+
 }
