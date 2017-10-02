@@ -12,6 +12,9 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
          */
 
         // Para X
+
+        System.out.println("Spliting tree " + node.getId());
+
         Rectangle2D r1_x = node.getRectangles().get(0);
         Rectangle2D r2_x = node.getRectangles().get(node.getRectangles().size() - 1);
         for (Rectangle2D rect : node.getRectangles()) {
@@ -48,7 +51,6 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
         RTree leftNode = new RTree(r1, node.getM(), node.getHeuristic(), node.getFather());
         RTree rightNode = new RTree(r2, node.getM(), node.getHeuristic(), node.getFather());
 
-
         // Por cada otro nodo en este nodo se agrega a r1 o a r2 dependiendo cual hace crecer el area menos.
         for (int i = 0; i < node.getRectangles().size(); i++) {
             Rectangle2D rect = node.getRectangles().get(i);
@@ -70,18 +72,16 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
         // Reseteamos los hijos y agregamos los 2 nuevos nodos
         node.resetChildren();
         node.resetRectangles();
-        //node.insert(r1, r1_id);
-        //node.insert(r2, r2_id);
-        node.insert(r1);
-        node.insert(r2);
+        node.insert(leftNode.getMBR());
+        node.insert(rightNode.getMBR());
 
         // Guardamos en disco el nodo y los hijos
         //y el padre
-        RTree.writeNode(node);
+
+        if (node.getFather() != node)
+            RTree.deleteNode(node);
         RTree.writeNode(leftNode);
         RTree.writeNode(rightNode);
-        if (node.getFather() !=null){
-        	RTree.writeNode(node.getFather());
-        }
+        RTree.writeNode(node.getFather());
     }
 }

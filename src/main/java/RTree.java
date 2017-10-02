@@ -3,7 +3,9 @@ import com.esri.core.geometry.Envelope;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class RTree implements Serializable {
 
@@ -36,20 +38,7 @@ public class RTree implements Serializable {
     }
     public RTree(Envelope env, int M, OverflowHeuristic h, RTree father) {
         Rectangle2D rect = rectFromEnvelope(env);
-
-        this.id = env.hashCode();
-        this.children = new ArrayList<Integer>();
-        this.rectangles = new ArrayList<Rectangle2D>();
-
-        this.rectangles.add(rect);
-        this.MBR = rect;
-        this.heuristic = h;
-        this.M = M;
-
-        this.father = father;
-
-        isLeaf = true;
-
+        new RTree(rect, M, h, father);
     }
 
     public RTree(Rectangle2D rect, int M, OverflowHeuristic h, RTree father) {
@@ -64,6 +53,8 @@ public class RTree implements Serializable {
         
         this.father = father;
         isLeaf = true;
+
+        this.father.children.add(id);
     }
 
 
@@ -82,13 +73,10 @@ public class RTree implements Serializable {
     	if (children.isEmpty()){
     		rectangles.add(rect);
     		
-    		
-            //children.add(id);
             MBR = MBR.createUnion(rect);
             
-            if (getFather()!=null){
-    			father.children.add(getId());
-    			father.rectangles.add(MBR);
+            if (father != null){
+    			father.updateChildMBR(getId(), MBR);
     		}
 
             if (rectangles.size() >= M) {
@@ -129,12 +117,15 @@ public class RTree implements Serializable {
         
     }
 
-    public RTree getFather() {
-		return father;
-	}
 
 	// Getters
-    
+    public RTree getFather() {
+        if (father == null)
+            return this;
+        else
+            return father;
+    }
+
     public ArrayList<Integer> getChildren() {
         return children;
     }
@@ -168,6 +159,13 @@ public class RTree implements Serializable {
         isLeaf = false;
     }
 
+    private void updateChildMBR(int id, Rectangle2D newMBR) {
+        System.out.println("id: " + id);
+        System.out.println("children: " + Arrays.toString(children.toArray()));
+        int idx = children.indexOf(id);
+        rectangles.set(idx, newMBR);
+    }
+
     // Funciones estaticas
     public static void writeNode(RTree node) throws IOException {
         String filename = node.id + ".ser";
@@ -187,6 +185,13 @@ public class RTree implements Serializable {
         in.close();
         file.close();
         return node;
+    }
+
+    public static void deleteNode(RTree node) {
+        String filename = node.id + ".ser";
+        File file = new File(filename);
+        file.delete();
+        node = null;
     }
 
     private static Rectangle2D rectFromEnvelope(Envelope env) {
