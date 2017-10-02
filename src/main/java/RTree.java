@@ -132,9 +132,7 @@ public class RTree implements Serializable {
 	}
 
 	// Getters
-    public int getId() {
-		return id;
-	}
+    
     public ArrayList<Integer> getChildren() {
         return children;
     }
@@ -145,6 +143,14 @@ public class RTree implements Serializable {
 
     public OverflowHeuristic getHeuristic() {
         return heuristic;
+    }
+
+    public Rectangle2D getMBR() {
+        return MBR;
+    }
+
+    public int getId() {
+        return id;
     }
 
     // Setters
