@@ -12,7 +12,7 @@ import java.io.*;
 
 public class RTreeGenerator {
     /*
-     *  Generates an RTree from a BDF file
+     *  Generates an RTree from a SHP file
      */
 
     public static int readConfigFile(String filename) throws IOException, SAXException, ParserConfigurationException {
@@ -51,6 +51,7 @@ public class RTreeGenerator {
                System.out.println(envelope);
                root.insert(envelope);
            }
+           RTree.writeNode(root);
        } catch (IOException e) {
            e.printStackTrace();
        }
@@ -58,7 +59,7 @@ public class RTreeGenerator {
        return root;
     }
 
-    public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException {
+    public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException, ClassNotFoundException {
         RTree root = RTreeGenerator("shape");
     }
 }

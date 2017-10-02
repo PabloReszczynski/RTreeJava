@@ -19,9 +19,12 @@ public class RTree implements Serializable {
 
     public RTree (int M, OverflowHeuristic h) {
         this.children = new ArrayList<Integer>();
+        this.rectangles = new ArrayList<Rectangle2D>();
         this.id = -1;
         this.empty = true;
         this.heuristic = h;
+        this.MBR = new Rectangle2D.Double();
+        this.M = M;
     }
 
     public RTree(Envelope env, int M, OverflowHeuristic h) {
@@ -34,6 +37,7 @@ public class RTree implements Serializable {
         this.rectangles.add(rect);
         this.MBR = rect;
         this.heuristic = h;
+        this.M = M;
     }
 
     public RTree(Rectangle2D rect, int M, OverflowHeuristic h) {
@@ -43,6 +47,8 @@ public class RTree implements Serializable {
 
         this.rectangles.add(rect);
         this.MBR = rect;
+        this.heuristic = h;
+        this.M = M;
     }
 
 
@@ -85,6 +91,7 @@ public class RTree implements Serializable {
         return heuristic;
     }
 
+    // Setters
     public void resetChildren() {
         children = new ArrayList<Integer>();
     }
@@ -93,6 +100,7 @@ public class RTree implements Serializable {
         rectangles = new ArrayList<Rectangle2D>();
     }
 
+    // Funciones estaticas
     public static void writeNode(RTree node) throws IOException {
         String filename = node.id + ".ser";
         FileOutputStream file = new FileOutputStream(filename);
@@ -100,6 +108,7 @@ public class RTree implements Serializable {
         out.writeObject(node);
         out.close();
         file.close();
+        System.out.println(filename + " written.");
     }
 
     public static RTree readNode(int id) throws IOException, ClassNotFoundException {

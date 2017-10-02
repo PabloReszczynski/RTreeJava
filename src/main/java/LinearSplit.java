@@ -2,9 +2,10 @@ import java.awt.*;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class LinearSplit implements OverflowHeuristic {
+public class LinearSplit implements OverflowHeuristic, Serializable {
 
     public void divideTree(RTree node) throws IOException {
         /*
@@ -58,8 +59,8 @@ public class LinearSplit implements OverflowHeuristic {
             Rectangle2D candidate1 = r1.createUnion(rect);
             Rectangle2D candidate2 = r2.createUnion(rect);
 
-            double area1 = candidate1.getX() * candidate1.getY();
-            double area2 = candidate2.getX() * candidate2.getY();
+            double area1 = candidate1.getWidth() * candidate1.getHeight();
+            double area2 = candidate2.getWidth() * candidate2.getHeight();
 
             if (area1 < area2) {
                 leftNode.insert(rect, id);
