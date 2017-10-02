@@ -122,6 +122,14 @@ public class RTree implements Serializable {
         return heuristic;
     }
 
+    public Rectangle2D getMBR() {
+        return MBR;
+    }
+
+    public int getId() {
+        return id;
+    }
+
     // Setters
     public void resetChildren() {
         children = new ArrayList<Integer>();
