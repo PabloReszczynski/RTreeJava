@@ -82,7 +82,6 @@ public class RTree implements Serializable {
     	if (children.isEmpty()){
     		rectangles.add(rect);
     		
-    		//obtengo nodo padre
     		if (getFather()!=null){
     			father.children.add(getId());
     		}
