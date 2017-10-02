@@ -24,7 +24,7 @@ public class RTreeGenerator {
         return Integer.parseInt(document.getElementsByTagName("M").item(0).getTextContent());
     }
 
-    public static RTree RTreeGenerator(String filename) throws IOException, ParserConfigurationException, SAXException {
+    public static RTree RTreeGenerator(String filename) throws IOException, ParserConfigurationException, SAXException, ClassNotFoundException {
 
        final File file = new File(filename);
        final FileInputStream fis = new FileInputStream(file);

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 public class LinearSplit implements OverflowHeuristic, Serializable {
 
-    public void divideTree(RTree node) throws IOException {
+    public void divideTree(RTree node) throws IOException, ClassNotFoundException {
         /*
          * Para cada dimensión, se determina el rectángulo con el valor máximo del lado bajo. (ej. aquel cuyo lado
          * izquierdo está más a la derecha) y aquel con el valor mínimo del lado alto (ej. aquel cuyo lado derecho
