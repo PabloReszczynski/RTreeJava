@@ -37,8 +37,7 @@ public class RTree implements Serializable {
         isLeaf = true;
     }
     public RTree(Envelope env, int M, OverflowHeuristic h, RTree father) {
-        Rectangle2D rect = rectFromEnvelope(env);
-        new RTree(rect, M, h, father);
+        this(rectFromEnvelope(env), M, h, father);
     }
 
     public RTree(Rectangle2D rect, int M, OverflowHeuristic h, RTree father) {
@@ -160,10 +159,9 @@ public class RTree implements Serializable {
     }
 
     private void updateChildMBR(int id, Rectangle2D newMBR) {
-        System.out.println("id: " + id);
-        System.out.println("children: " + Arrays.toString(children.toArray()));
         int idx = children.indexOf(id);
         rectangles.set(idx, newMBR);
+        MBR = MBR.createUnion(newMBR);
     }
 
     // Funciones estaticas
