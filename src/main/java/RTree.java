@@ -60,7 +60,31 @@ public class RTree implements Serializable {
     public int getM() {
         return M;
     }
-
+    
+    public ArrayList<Rectangle2D> buscar(Rectangle2D rect) throws ClassNotFoundException, IOException{
+    	ArrayList<Rectangle2D> res = new ArrayList<Rectangle2D>();
+    	//si es hoja
+    	if(children.isEmpty()){
+    		if (MBR.contains(rect)){
+    			for (Rectangle2D rectangle : rectangles){
+    				if (rectangle.contains(rect)){
+    					res.add(rectangle);
+    				}
+    			}
+    		}
+    	}
+    	//si no es hoja
+    	else{
+    		for (Integer child : children){
+    			RTree childNode  =readNode(child);
+    			if (childNode.getMBR().contains(rect)){
+    				childNode.buscar(rect);
+    			}
+    		}
+    	}
+    	return res;
+    }
+    
     public void insert(Envelope env) throws IOException, ClassNotFoundException {
         /* Inserta un rectangulo en la lista de MBRs. Aquí se debe verificar si existe overflow */
         Rectangle2D rect = rectFromEnvelope(env);
