@@ -1,23 +1,21 @@
 import com.esri.core.geometry.Envelope;
 
-import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 
 public class RTree implements Serializable {
 
     private int id;
-    private ArrayList<Integer> children;
+    private ArrayList children;
     private ArrayList<Rectangle2D> rectangles;
     private boolean empty;
     private int M;
     private Rectangle2D MBR;
     private OverflowHeuristic heuristic;
 
-    private RTree father;
+    private int father; //RTree node id
 
     private boolean isLeaf;
 
@@ -25,7 +23,7 @@ public class RTree implements Serializable {
     // FIXME: Pasar de 2 arreglos a un Map
 
     public RTree (int M, OverflowHeuristic h) {
-        this.children = new ArrayList<Integer>();
+        this.children = new ArrayList<>();
         this.rectangles = new ArrayList<Rectangle2D>();
         this.id = -1;
         this.empty = true;
@@ -33,16 +31,16 @@ public class RTree implements Serializable {
         this.MBR = new Rectangle2D.Double();
         this.M = M;
 
-        this.father = null;
+        this.father = -2;
         isLeaf = true;
     }
-    public RTree(Envelope env, int M, OverflowHeuristic h, RTree father) {
+    public RTree(Envelope env, int M, OverflowHeuristic h, int father) throws IOException, ClassNotFoundException {
         this(rectFromEnvelope(env), M, h, father);
     }
 
-    public RTree(Rectangle2D rect, int M, OverflowHeuristic h, RTree father) {
+    public RTree(Rectangle2D rect, int M, OverflowHeuristic h, int father) throws IOException, ClassNotFoundException {
         this.id = rect.hashCode();
-        this.children = new ArrayList<Integer>();
+        this.children = new ArrayList<>();
         this.rectangles = new ArrayList<Rectangle2D>();
 
         this.rectangles.add(rect);
@@ -53,103 +51,119 @@ public class RTree implements Serializable {
         this.father = father;
         isLeaf = true;
 
-        this.father.children.add(id);
+        RTree fat  = RTree.readNode(father);
+        fat.children.add(id);
+        RTree.writeNode(fat);
+    }
+
+
+    public static int makeRTree(Rectangle2D rect, int M, OverflowHeuristic h, int father) throws IOException, ClassNotFoundException {
+        RTree node = new RTree(rect, M, h, father);
+        int id = node.getId();
+        writeNode(node);
+        return id;
     }
 
 
     public int getM() {
         return M;
     }
-    
-    public ArrayList<Rectangle2D> buscar(Rectangle2D rect) throws ClassNotFoundException, IOException{
-    	ArrayList<Rectangle2D> res = new ArrayList<Rectangle2D>();
-    	//si es hoja
-    	if(children.isEmpty()){
-    		if (MBR.contains(rect)){
-    			for (Rectangle2D rectangle : rectangles){
-    				if (rectangle.contains(rect)){
-    					res.add(rectangle);
-    				}
-    			}
-    		}
-    	}
-    	//si no es hoja
-    	else{
-    		for (Integer child : children){
-    			RTree childNode  =readNode(child);
-    			if (childNode.getMBR().contains(rect)){
-    				childNode.buscar(rect);
-    			}
-    		}
-    	}
-    	return res;
+
+    public static ArrayList<Rectangle2D> search (int rootId, Rectangle2D rect) throws ClassNotFoundException, IOException {
+        ArrayList<Rectangle2D> res = new ArrayList<>();
+        RTree root = RTree.readNode(rootId);
+        if (root.children.isEmpty()) {
+            if (root.MBR.contains(rect)) {
+                for (Rectangle2D rectangle : root.rectangles) {
+                    if (rectangle.contains(rect)) {
+                        res.add(rectangle);
+                    }
+                }
+            }
+        } else {
+            ArrayList<Integer> rootChildren = new ArrayList<>(root.children);
+            root = null;
+            for (Integer child : rootChildren) {
+                res.addAll(RTree.search(child, rect));
+            }
+        }
+
+        return res;
     }
-    
-    public void insert(Envelope env) throws IOException, ClassNotFoundException {
+
+    public static void insert(int nodeId, Envelope env) throws IOException, ClassNotFoundException {
         /* Inserta un rectangulo en la lista de MBRs. Aquí se debe verificar si existe overflow */
         Rectangle2D rect = rectFromEnvelope(env);
-        insert(rect);
+        insert(nodeId, rect);
     }
 
-    public void insert(Rectangle2D rect) throws IOException, ClassNotFoundException {
-    	//si es una hoja
-    	if (children.isEmpty()){
-    		rectangles.add(rect);
-    		
-            MBR = MBR.createUnion(rect);
-            
-            if (father != null){
-    			father.updateChildMBR(getId(), MBR);
-    		}
+    public static void insert(int nodeId, Rectangle2D rect) throws IOException, ClassNotFoundException {
+        RTree node = readNode(nodeId);
+        if (node.children.isEmpty()) {
+            node.rectangles.add(rect);
+            node.MBR = node.MBR.createUnion(rect);
+            writeNode(node);
 
-            if (rectangles.size() >= M) {
-                heuristic.divideTree(this);
-                notLeaf();
+            if (node.father != -2) {
+                RTree father = readNode(node.father);
+                writeNode(node);
+                Rectangle2D nodeMBR = (Rectangle2D) node.MBR.clone();
+                node = null;
+                father.updateChildMBR(nodeId, nodeMBR);
+                writeNode(father);
+                node = readNode(nodeId);
             }
-    	}
-    	else { // si no es hoja
-    		double growth=-1;
-    		RTree lessGrowthNode = null;
-    		
-    		//escojo el MBR (entre los hijos)  que deba crecer lo menos posible
-    		for (Integer child : children){
-    			//obtengo nodo
-                try {
 
-                    System.out.println("child " + child);
-                    RTree childNode = readNode(child);
-                    Rectangle2D union = (childNode.MBR).createUnion(rect); //MBR de la union
-                    double childNodeArea = (childNode.MBR).getWidth() * (childNode.MBR).getHeight();
-                    double unionArea = union.getHeight() * union.getWidth();
-                    if (growth < 0 || (unionArea - childNodeArea) < growth) {
-                        lessGrowthNode = childNode;
-                        growth = unionArea - childNodeArea;
-                    }
-                } catch (FileNotFoundException e) {
-                    continue;
-                } catch (ClassNotFoundException e) {
-                    continue;
+            if (node.rectangles.size() >= node.M) {
+                node.notLeaf();
+                writeNode(node);
+                OverflowHeuristic heuristic = node.heuristic;
+                node = null;
+                heuristic.divideTree(nodeId);
+            }
+        } else {
+            double growth = -1;
+            int lessGrowthNodeId = -2;
+            ArrayList<Integer> children = new ArrayList<>(node.children);
+            writeNode(node);
+            node = null;
+
+            for (Integer child : children) {
+                RTree childNode = readNode(child);
+                Rectangle2D union = (childNode.MBR).createUnion(rect);
+                double childNodeArea = (childNode.MBR).getWidth() * (childNode.MBR).getHeight();
+                double unionArea = union.getHeight() * union.getWidth();
+                if (growth < 0 || (unionArea - childNodeArea) < growth) {
+                    lessGrowthNodeId = child;
+                    growth = unionArea - childNodeArea;
                 }
-    		}
-    		lessGrowthNode.insert(rect);
-    		
-    		if (lessGrowthNode != null) {
-                lessGrowthNode.insert(rect);
             }
-    	}
-        
+            System.out.println("Inserting into" + lessGrowthNodeId);
+            insert(lessGrowthNodeId, rect);
+        }
+
     }
 
+    public static void addChild(int nodeId, int childId) throws IOException, ClassNotFoundException {
+        RTree node = readNode(nodeId);
+        node.children.add(childId);
+        writeNode(node);
+    }
+
+    public static void addChild(int nodeId, int[] children) throws IOException, ClassNotFoundException {
+        RTree node = readNode(nodeId);
+        for (int child : children) {
+            node.children.add(child);
+        }
+        writeNode(node);
+    }
 
 	// Getters
-    public RTree getFather() {
-        if (father == null)
-            return this;
-        else
-            return father;
+    public int getFather() {
+        return father;
     }
 
-    public ArrayList<Integer> getChildren() {
+    public ArrayList getChildren() {
         return children;
     }
 
@@ -171,7 +185,7 @@ public class RTree implements Serializable {
 
     // Setters
     public void resetChildren() {
-        children = new ArrayList<Integer>();
+        children = new ArrayList<>();
     }
 
     public void resetRectangles() {
@@ -196,7 +210,7 @@ public class RTree implements Serializable {
         out.writeObject(node);
         out.close();
         file.close();
-        System.out.println(filename + " written.");
+        //System.out.println(filename + " written.");
     }
 
     public static RTree readNode(int id) throws IOException, ClassNotFoundException {
@@ -206,6 +220,7 @@ public class RTree implements Serializable {
         RTree node = (RTree) in.readObject();
         in.close();
         file.close();
+        //System.out.println("node " + id + " read.");
         return node;
     }
 
@@ -214,6 +229,12 @@ public class RTree implements Serializable {
         File file = new File(filename);
         file.delete();
         node = null;
+    }
+
+    public static void deleteNode(int nodeId) {
+        String filename = nodeId + ".ser";
+        File file = new File(filename);
+        file.delete();
     }
 
     private static Rectangle2D rectFromEnvelope(Envelope env) {

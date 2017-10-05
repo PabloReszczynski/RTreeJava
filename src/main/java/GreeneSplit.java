@@ -8,7 +8,15 @@ import java.util.Collections;
 public class GreeneSplit implements OverflowHeuristic, Serializable {
 
 	@Override
-	public void divideTree(RTree node) throws IOException, ClassNotFoundException {
+	public void divideTree(int nodeId) throws IOException, ClassNotFoundException {
+
+	    RTree node = RTree.readNode(nodeId);
+	    int M = node.getM();
+	    int father = node.getFather();
+	    if (father == -2)
+	        father = nodeId;
+	    OverflowHeuristic heuristic = node.getHeuristic();
+
 		Rectangle2D r1_x = node.getRectangles().get(0);
         Rectangle2D r2_x = node.getRectangles().get(node.getRectangles().size() - 1);
         for (Rectangle2D rect : node.getRectangles()) {
@@ -49,44 +57,53 @@ public class GreeneSplit implements OverflowHeuristic, Serializable {
             separacionCorte = "x";
         }
         
-        ArrayList<Rectangle2D> rectangles = node.getRectangles();
-        Collections.sort(rectangles, new RectComp(separacionCorte));
-        
-        RTree leftNode = new RTree(r1, node.getM(), node.getHeuristic(), node.getFather());
-        RTree rightNode = new RTree(r2, node.getM(), node.getHeuristic(), node.getFather());
-        
-        for (int i=0; i<=((node.getM()/2) -1); i++){
-        	leftNode.insert(rectangles.get(i));
+        ArrayList<Rectangle2D> rectangles = new ArrayList<>(node.getRectangles());
+
+        node = null;
+
+        int leftId = RTree.makeRTree(r1, M, heuristic, father);
+        int rightId = RTree.makeRTree(r2, M, heuristic, father);
+
+        for (int i=0; i<=((M/2) -1); i++){
+        	RTree.insert(leftId, rectangles.get(i));
         }
-        for (int i=(node.getM()/2); i<(node.getM()); i++){
-        	rightNode.insert(rectangles.get(i));
+        for (int i=(M/2); i<(M); i++){
+        	RTree.insert(rightId, rectangles.get(i));
         }
+
+        node = RTree.readNode(nodeId);
         
         // Reseteamos los hijos y agregamos los 2 nuevos nodos
         node.resetChildren();
         node.resetRectangles();
+        RTree.writeNode(node);
 
         // Guardamos en disco el nodo y los hijos
         //y el padre
 
-        if (node.getFather() != node){
-            (node.getFather()).insert(leftNode.getMBR());
-            (node.getFather()).insert(rightNode.getMBR());
-            
+        Rectangle2D leftMBR = (Rectangle2D) RTree.readNode(leftId).getMBR().clone();
+        Rectangle2D rightMBR = (Rectangle2D) RTree.readNode(rightId).getMBR().clone();
+
+        if (father != nodeId){
+
+            RTree.insert(father, leftMBR);
+            RTree.insert(father, rightMBR);
+
+            RTree.addChild(father, new int[]{leftId, rightId});
+
             RTree.deleteNode(node);
-            
-            RTree.writeNode(leftNode);
-            RTree.writeNode(rightNode);
-            RTree.writeNode(node.getFather());
         }
         else{
-        	node.insert(leftNode.getMBR());
-            node.insert(rightNode.getMBR());
-            
-            RTree.writeNode(leftNode);
-            RTree.writeNode(rightNode);
+            RTree.insert(nodeId, leftMBR);
+            RTree.insert(nodeId, rightMBR);
+
+            RTree.addChild(nodeId, new int[]{leftId, rightId});
+
             RTree.writeNode(node);
         }
 	}
+	public String toString() {
+	    return "GreeneSplit";
+    }
 
 }

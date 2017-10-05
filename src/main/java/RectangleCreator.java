@@ -21,10 +21,10 @@ public class RectangleCreator {
         Random rng = new Random();
         ArrayList<String[]> data = new ArrayList<String[]>();
         for (long i = 0; i < n; i++) {
-            String x = rng.nextDouble() + "";
-            String y = rng.nextDouble() + "";
-            String w = rng.nextDouble() + "";
-            String h = rng.nextDouble() + "";
+            String x = rng.nextDouble() * 500000.0 + "";
+            String y = rng.nextDouble() * 500000.0 + "";
+            String w = rng.nextDouble() * 100.0 + "";
+            String h = rng.nextDouble() * 100.0 + "";
 
             data.add(new String[]{ x, y, w, h });
 

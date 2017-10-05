@@ -1,5 +1,6 @@
 import java.io.IOException;
 
 public interface OverflowHeuristic {
-    void divideTree(RTree node) throws IOException, ClassNotFoundException;
+    void divideTree(int nodeId) throws IOException, ClassNotFoundException;
+    String toString();
 }

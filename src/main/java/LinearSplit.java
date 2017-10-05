@@ -1,15 +1,26 @@
+import javax.swing.text.rtf.RTFEditorKit;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class LinearSplit implements OverflowHeuristic, Serializable {
 
-    public void divideTree(RTree node) throws IOException, ClassNotFoundException {
+    public void divideTree(int nodeId) throws IOException, ClassNotFoundException {
         /*
          * Para cada dimensión, se determina el rectángulo con el valor máximo del lado bajo. (ej. aquel cuyo lado
          * izquierdo está más a la derecha) y aquel con el valor mínimo del lado alto (ej. aquel cuyo lado derecho
          * está más a la izquierda). Se almacena la separación entre estos lados.
          */
+
+        RTree node = RTree.readNode(nodeId);
+        OverflowHeuristic heuristic = node.getHeuristic();
+        int fatherId = node.getFather();
+        int M = node.getM();
+
+        if (fatherId == -2) {
+            fatherId = nodeId;
+        }
 
         // Para X
 
@@ -48,12 +59,18 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
         } else {
             r1 = r1_y; r2 = r2_y;
         }
-        RTree leftNode = new RTree(r1, node.getM(), node.getHeuristic(), node.getFather());
-        RTree rightNode = new RTree(r2, node.getM(), node.getHeuristic(), node.getFather());
+
+        int leftId = RTree.makeRTree(r1, M, heuristic, fatherId);
+        int rightId = RTree.makeRTree(r2, M, heuristic, fatherId);
 
         // Por cada otro nodo en este nodo se agrega a r1 o a r2 dependiendo cual hace crecer el area menos.
-        for (int i = 0; i < node.getRectangles().size(); i++) {
-            Rectangle2D rect = node.getRectangles().get(i);
+
+        ArrayList<Rectangle2D> rectangles = new ArrayList<>(node.getRectangles());
+
+        node = null;
+
+        for (int i = 0; i < rectangles.size(); i++) {
+            Rectangle2D rect = rectangles.get(i);
             //int id = node.getChildren().get(i);
             Rectangle2D candidate1 = r1.createUnion(rect);
             Rectangle2D candidate2 = r2.createUnion(rect);
@@ -62,38 +79,43 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
             double area2 = candidate2.getWidth() * candidate2.getHeight();
 
             if (area1 < area2) {
-                leftNode.insert(rect);
+                RTree.insert(leftId, rect);
             }
             else {
-                rightNode.insert(rect);
+                RTree.insert(rightId, rect);
             }
         }
+
+        node = RTree.readNode(nodeId);
 
         // Reseteamos los hijos y agregamos los 2 nuevos nodos
         node.resetChildren();
         node.resetRectangles();
 
+        node = null;
+
         // Guardamos en disco el nodo y los hijos
         //y el padre
 
-        if (node.getFather() != node){
-            (node.getFather()).insert(leftNode.getMBR());
-            (node.getFather()).insert(rightNode.getMBR());
-            
-            RTree.deleteNode(node);
-            
-            RTree.writeNode(leftNode);
-            RTree.writeNode(rightNode);
-            RTree.writeNode(node.getFather());
+        Rectangle2D leftMBR = (Rectangle2D) RTree.readNode(leftId).getMBR().clone();
+        Rectangle2D rightMBR = (Rectangle2D) RTree.readNode(rightId).getMBR().clone();
+
+        if (fatherId != nodeId){
+            RTree.insert(fatherId, leftMBR);
+            RTree.insert(fatherId, rightMBR);
+
+            RTree.addChild(fatherId, new int[]{leftId, rightId});
+
+            RTree.deleteNode(nodeId);
         }
-        else{
-        	node.insert(leftNode.getMBR());
-            node.insert(rightNode.getMBR());
-            
-            RTree.writeNode(leftNode);
-            RTree.writeNode(rightNode);
-            RTree.writeNode(node);
+        else {
+            RTree.insert(nodeId, leftMBR);
+            RTree.insert(nodeId, rightMBR);
+
+            RTree.addChild(nodeId, new int[]{leftId, rightId});
         }
-        
+    }
+    public String toString() {
+        return "LinearSplit";
     }
 }
