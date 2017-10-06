@@ -196,7 +196,11 @@ public class RTree implements Serializable {
 
     private void updateChildMBR(int id, Rectangle2D newMBR) {
         int idx = children.indexOf(id);
-        rectangles.set(idx, newMBR);
+        try {
+            rectangles.set(idx, newMBR);
+        } catch (IndexOutOfBoundsException e) {
+            rectangles.add(idx, newMBR);
+        }
         MBR = MBR.createUnion(newMBR);
     }
 

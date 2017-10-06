@@ -10,7 +10,7 @@ public class GreeneSplit implements OverflowHeuristic, Serializable {
 	@Override
 	public void divideTree(int nodeId) throws IOException, ClassNotFoundException {
 
-	    System.out.println("Splitting node " + nodeId);
+	   // System.out.println("Splitting node " + nodeId);
 
 	    RTree node = RTree.readNode(nodeId);
 	    int M = node.getM();

@@ -14,7 +14,7 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
          * está más a la izquierda). Se almacena la separación entre estos lados.
          */
 
-        System.out.println("Splitting node " + nodeId);
+        //System.out.println("Splitting node " + nodeId);
 
         RTree node = RTree.readNode(nodeId);
         OverflowHeuristic heuristic = node.getHeuristic();
