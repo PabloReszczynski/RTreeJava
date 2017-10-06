@@ -96,7 +96,7 @@ public class RTreeGenerator {
         long diff = TimeUnit.SECONDS.convert(System.nanoTime() - time1, TimeUnit.NANOSECONDS);
         long writes = counter.getWrites();
         long reads = counter.getReads();
-        System.out.println("Took " + diff + " seconds to search " + rect.toString());
+        //System.out.println("Took " + diff + " seconds to search " + rect.toString());
         System.out.println("Took " + (writes+reads) + " IO to search");
         return result;
     }
@@ -104,8 +104,29 @@ public class RTreeGenerator {
     public static void main(String[] args) throws IOException, ParserConfigurationException, SAXException, ClassNotFoundException {
         IOCount counts = IOCount.getInstance();
         OverflowHeuristic heuristic = new LinearSplit();
+        for (int number = 12; number <= 13; number++) {
+            deleteSerFiles();
+            long time1 = System.nanoTime();
+            RTreeGenerator("rectangles" + number + ".csv", heuristic);
+            long diff = TimeUnit.SECONDS.convert(System.nanoTime() - time1, TimeUnit.NANOSECONDS);
+            System.out.println("Took " + diff + " seconds to build RTree with " + heuristic.toString() + " and 2^" + number + " rectangles");
+            long reads = counts.getReads();
+            long writes = counts.getWrites();
+            System.out.println("Took " + (reads+writes) + " IO");
+
+            int i = 5;
+            System.out.println("Buscando 5 rectangulos generados aleatoriamente");
+            while (i-->0) {
+                ArrayList<Rectangle2D> result = searchOne();
+            }
+
+        }
+
 //        for (int number = 9; number <= 25; number++) {
 //            deleteSerFiles();
+//            counts.reset();
+//            deleteSerFiles();
+//            heuristic = new GreeneSplit();
 //            long time1 = System.nanoTime();
 //            RTreeGenerator("rectangles" + number + ".csv", heuristic);
 //            long diff = TimeUnit.SECONDS.convert(System.nanoTime() - time1, TimeUnit.NANOSECONDS);
@@ -119,27 +140,6 @@ public class RTreeGenerator {
 //                System.out.println("Buscando 5 rectangulos generados aleatoriamente");
 //                ArrayList<Rectangle2D> result = searchOne();
 //            }
-//
 //        }
-
-        for (int number = 9; number <= 25; number++) {
-            deleteSerFiles();
-            counts.reset();
-            deleteSerFiles();
-            heuristic = new GreeneSplit();
-            long time1 = System.nanoTime();
-            RTreeGenerator("rectangles" + number + ".csv", heuristic);
-            long diff = TimeUnit.SECONDS.convert(System.nanoTime() - time1, TimeUnit.NANOSECONDS);
-            System.out.println("Took " + diff + " seconds to build RTree with " + heuristic.toString() + " and 2^" + number + " rectangles");
-            long reads = counts.getReads();
-            long writes = counts.getWrites();
-            System.out.println("Took " + (reads+writes) + " reads to disk");
-
-            int i = 5;
-            while (i-->0) {
-                System.out.println("Buscando 5 rectangulos generados aleatoriamente");
-                ArrayList<Rectangle2D> result = searchOne();
-            }
-        }
     }
 }

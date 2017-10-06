@@ -88,21 +88,11 @@ public class GreeneSplit implements OverflowHeuristic, Serializable {
         Rectangle2D rightMBR = (Rectangle2D) RTree.readNode(rightId).getMBR().clone();
 
         if (father != nodeId){
-
-            RTree.insert(father, leftMBR);
-            RTree.insert(father, rightMBR);
-
-            RTree.addChild(father, new int[]{leftId, rightId});
-
+            RTree.addChild(father, new int[]{leftId, rightId}, new Rectangle2D[]{leftMBR, rightMBR});
             RTree.deleteNode(node);
         }
         else{
-            RTree.insert(nodeId, leftMBR);
-            RTree.insert(nodeId, rightMBR);
-
-            RTree.addChild(nodeId, new int[]{leftId, rightId});
-
-            RTree.writeNode(node);
+            RTree.addChild(nodeId, new int[]{leftId, rightId}, new Rectangle2D[]{leftMBR, rightMBR});
         }
 	}
 	public String toString() {

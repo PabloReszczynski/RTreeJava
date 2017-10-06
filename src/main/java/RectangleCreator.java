@@ -19,7 +19,7 @@ public class RectangleCreator {
         final FileOutputStream out = new FileOutputStream("rectangles" + idx + ".csv");
         final Appendable appendable = new OutputStreamWriter(out);
         final CSVPrinter printer = CSVFormat.DEFAULT.withHeader("x", "y", "w", "h").print(appendable);
-        Random rng = new Random();
+        Random rng = new Random(0); // Se usa seed para generar siempre los mismos rectangulos
         ArrayList<String[]> data = new ArrayList<String[]>();
         for (long i = 0; i < n; i++) {
             String x = rng.nextDouble() * 500000.0 + "";
@@ -55,6 +55,5 @@ public class RectangleCreator {
             makeRectangles((long) Math.pow(2, i), 4096, i);
         }
         System.out.println("Made all rects in " + ((System.currentTimeMillis() - t1) / 1000.0) + " time");
-        Instrumentation inst;
     }
 }

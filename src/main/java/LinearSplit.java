@@ -14,7 +14,6 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
          * está más a la izquierda). Se almacena la separación entre estos lados.
          */
 
-        //System.out.println("Splitting node " + nodeId);
 
         RTree node = RTree.readNode(nodeId);
         OverflowHeuristic heuristic = node.getHeuristic();
@@ -67,6 +66,8 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
         // Por cada otro nodo en este nodo se agrega a r1 o a r2 dependiendo cual hace crecer el area menos.
 
         ArrayList<Rectangle2D> rectangles = new ArrayList<>(node.getRectangles());
+        ArrayList<Rectangle2D> leftRects = new ArrayList<>();
+        ArrayList<Rectangle2D> rightRects = new ArrayList<>();
 
         node = null;
 
@@ -80,20 +81,22 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
             double area2 = candidate2.getWidth() * candidate2.getHeight();
 
             if (area1 < area2) {
-                RTree.insert(leftId, rect);
+                leftRects.add(rect);
             }
             else {
-                RTree.insert(rightId, rect);
+                rightRects.add(rect);
             }
         }
+
+        RTree.insertDirectly(leftId, leftRects);
+        RTree.insertDirectly(rightId, rightRects);
 
         node = RTree.readNode(nodeId);
 
         // Reseteamos los hijos y agregamos los 2 nuevos nodos
         node.resetChildren();
         node.resetRectangles();
-
-        node = null;
+        RTree.writeNode(node);
 
         // Guardamos en disco el nodo y los hijos
         //y el padre
@@ -102,18 +105,11 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
         Rectangle2D rightMBR = (Rectangle2D) RTree.readNode(rightId).getMBR().clone();
 
         if (fatherId != nodeId){
-            RTree.insert(fatherId, leftMBR);
-            RTree.insert(fatherId, rightMBR);
-
-            RTree.addChild(fatherId, new int[]{leftId, rightId});
-
-            RTree.deleteNode(nodeId);
+            RTree.addChild(fatherId, new int[]{leftId, rightId}, new Rectangle2D[]{leftMBR, rightMBR});
+            RTree.deleteNode(nodeId, fatherId);
         }
         else {
-            RTree.insert(nodeId, leftMBR);
-            RTree.insert(nodeId, rightMBR);
-
-            RTree.addChild(nodeId, new int[]{leftId, rightId});
+            RTree.addChild(nodeId, new int[]{leftId, rightId}, new Rectangle2D[]{leftMBR, rightMBR});
         }
     }
     public String toString() {

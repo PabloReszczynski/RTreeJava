@@ -4,16 +4,18 @@ import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 
 public class RTree implements Serializable {
 
     private int id;
-    private ArrayList children;
+    //private ArrayList children;
     private ArrayList<Rectangle2D> rectangles;
     private boolean empty;
     private int M;
     private Rectangle2D MBR;
     private OverflowHeuristic heuristic;
+    private HashMap<Integer, Rectangle2D> childrenMBR;
 
     private int father; //RTree node id
 
@@ -21,7 +23,7 @@ public class RTree implements Serializable {
 
 
     public RTree (int M, OverflowHeuristic h) {
-        this.children = new ArrayList<>();
+        //this.children = new ArrayList<>();
         this.rectangles = new ArrayList<Rectangle2D>();
         this.id = -1;
         this.empty = true;
@@ -31,6 +33,7 @@ public class RTree implements Serializable {
 
         this.father = -2;
         isLeaf = true;
+        this.childrenMBR = new HashMap<>();
     }
 
     public RTree(Envelope env, int M, OverflowHeuristic h, int father) throws IOException, ClassNotFoundException {
@@ -38,8 +41,8 @@ public class RTree implements Serializable {
     }
 
     public RTree(Rectangle2D rect, int M, OverflowHeuristic h, int father) throws IOException, ClassNotFoundException {
-        this.id = rect.hashCode();
-        this.children = new ArrayList<>();
+        this.id = rect.hashCode() * father;
+        //this.children = new ArrayList<>();
         this.rectangles = new ArrayList<Rectangle2D>();
 
         this.rectangles.add(rect);
@@ -49,10 +52,7 @@ public class RTree implements Serializable {
         
         this.father = father;
         isLeaf = true;
-
-        RTree fat  = RTree.readNode(father);
-        fat.children.add(id);
-        RTree.writeNode(fat);
+        this.childrenMBR = new HashMap<>();
     }
 
 
@@ -71,16 +71,14 @@ public class RTree implements Serializable {
     public static ArrayList<Rectangle2D> search (int rootId, Rectangle2D rect) throws ClassNotFoundException, IOException {
         ArrayList<Rectangle2D> res = new ArrayList<>();
         RTree root = RTree.readNode(rootId);
-        if (root.children.isEmpty()) {
-            if (root.MBR.contains(rect)) {
-                for (Rectangle2D rectangle : root.rectangles) {
-                    if (rectangle.contains(rect)) {
-                        res.add(rectangle);
-                    }
+        if (root.isLeaf) {
+            for (Rectangle2D rectangle : root.rectangles) {
+                if (rectangle.intersects(rect)) {
+                    res.add(rectangle);
                 }
             }
         } else {
-            ArrayList<Integer> rootChildren = new ArrayList<>(root.children);
+            ArrayList<Integer> rootChildren = new ArrayList<>(root.childrenMBR.keySet());
             root = null;
             for (Integer child : rootChildren) {
                 res.addAll(RTree.search(child, rect));
@@ -98,35 +96,33 @@ public class RTree implements Serializable {
 
     public static void insert(int nodeId, Rectangle2D rect) throws IOException, ClassNotFoundException {
         RTree node = readNode(nodeId);
-        if (node.children.isEmpty()) {
+        if (node.isLeaf) {
             node.rectangles.add(rect);
             node.MBR = node.MBR.createUnion(rect);
             writeNode(node);
 
-            if (node.father != -2) {
-                RTree father = readNode(node.father);
-                writeNode(node);
-                Rectangle2D nodeMBR = (Rectangle2D) node.MBR.clone();
-                node = null;
-                father.updateChildMBR(nodeId, nodeMBR);
-                writeNode(father);
-                node = readNode(nodeId);
-            }
+            int newSize = node.rectangles.size();
+            int fatherId = node.father;
+            int M = node.M;
+            OverflowHeuristic heuristic = node.heuristic;
+            Rectangle2D newMBR = node.MBR;
 
-            if (node.rectangles.size() >= node.M) {
-                node.notLeaf();
-                writeNode(node);
-                OverflowHeuristic heuristic = node.heuristic;
-                node = null;
+            node = null;
+
+            updateChildMBR(nodeId, fatherId, newMBR);
+
+            if (newSize >= M) {
+                System.out.println("divide leaf " + nodeId);
                 heuristic.divideTree(nodeId);
             }
+
         } else {
             double growth = -1;
             int lessGrowthNodeId = -2;
-            ArrayList<Integer> children = new ArrayList<>(node.children);
-            writeNode(node);
+            ArrayList<Integer> children = new ArrayList<>(node.childrenMBR.keySet());
             node = null;
 
+           // System.out.println(children);
             for (Integer child : children) {
                 RTree childNode = readNode(child);
                 Rectangle2D union = (childNode.MBR).createUnion(rect);
@@ -142,31 +138,65 @@ public class RTree implements Serializable {
 
     }
 
-    public static void addChild(int nodeId, int childId) throws IOException, ClassNotFoundException {
+    public static void insertDirectly(int nodeId, ArrayList<Rectangle2D> rects) throws IOException, ClassNotFoundException {
         RTree node = readNode(nodeId);
-        node.children.add(childId);
-        writeNode(node);
-    }
-
-    public static void addChild(int nodeId, int[] children) throws IOException, ClassNotFoundException {
-        RTree node = readNode(nodeId);
-        for (int child : children) {
-            node.children.add(child);
+        for (Rectangle2D rect : rects) {
+            node.rectangles.add(rect);
         }
         writeNode(node);
     }
 
-	// Getters
+    public static void addChild(int nodeId, int childId, Rectangle2D MBR) throws IOException, ClassNotFoundException {
+        RTree node = readNode(nodeId);
+        node.notLeaf();
+        node.childrenMBR.put(childId, MBR);
+        node.setMBR(node.getMBR().createUnion(MBR));
+        int fatherId = node.father;
+        Rectangle2D newMBR = node.MBR;
+        writeNode(node);
+        updateChildMBR(nodeId, fatherId, newMBR);
+    }
+
+    public static void addChild(int nodeId, int[] children, Rectangle2D[] rects) throws IOException, ClassNotFoundException {
+        RTree node = readNode(nodeId);
+        node.notLeaf();
+        for (int i = 0; i < children.length; i++) {
+            node.childrenMBR.put(children[i], rects[i]);
+            node.setMBR(node.getMBR().createUnion(rects[i]));
+        }
+
+        writeNode(node);
+
+        OverflowHeuristic heuristic = node.heuristic;
+        if (node.childrenMBR.size() >= node.M) {
+            System.out.println("divide node " + nodeId);
+            node = null;
+            heuristic.divideTree(nodeId);
+        } else {
+            int fatherId = node.father;
+            Rectangle2D newMBR = node.MBR;
+            writeNode(node);
+            node = null;
+            updateChildMBR(nodeId, fatherId, newMBR);
+
+        }
+    }
+
+    // Getters
     public int getFather() {
         return father;
     }
 
-    public ArrayList getChildren() {
-        return children;
-    }
+//    public ArrayList getChildren() {
+//        return children;
+//    }
 
     public ArrayList<Rectangle2D> getRectangles() {
-        return rectangles;
+        if (isLeaf) {
+            return rectangles;
+        } else {
+            return new ArrayList<>(childrenMBR.values());
+        }
     }
 
     public OverflowHeuristic getHeuristic() {
@@ -182,8 +212,12 @@ public class RTree implements Serializable {
     }
 
     // Setters
+    public void setMBR(Rectangle2D MBR) {
+        this.MBR = MBR;
+    }
     public void resetChildren() {
-        children = new ArrayList<>();
+        //children = new ArrayList<>();
+        childrenMBR = new HashMap<Integer, Rectangle2D>();
     }
 
     public void resetRectangles() {
@@ -194,14 +228,24 @@ public class RTree implements Serializable {
         isLeaf = false;
     }
 
-    private void updateChildMBR(int id, Rectangle2D newMBR) {
-        int idx = children.indexOf(id);
-        try {
-            rectangles.set(idx, newMBR);
-        } catch (IndexOutOfBoundsException e) {
-            rectangles.add(idx, newMBR);
+    public static void notLeaf(int nodeId) throws IOException, ClassNotFoundException {
+        RTree node = readNode(nodeId);
+        node.notLeaf();
+        writeNode(node);
+    }
+
+    private static void updateChildMBR(int childId, int fatherId, Rectangle2D newMBR) throws IOException, ClassNotFoundException {
+
+        while (fatherId != -2) {
+            RTree father = readNode(fatherId);
+            father.childrenMBR.put(childId, newMBR);
+            father.MBR = father.MBR.createUnion(newMBR);
+            writeNode(father);
+
+            childId = fatherId;
+            fatherId = father.father;
+            newMBR = father.MBR;
         }
-        MBR = MBR.createUnion(newMBR);
     }
 
     // Funciones estaticas
@@ -229,14 +273,17 @@ public class RTree implements Serializable {
         return node;
     }
 
-    public static void deleteNode(RTree node) {
-        String filename = node.id + ".ser";
-        File file = new File(filename);
-        file.delete();
+    public static void deleteNode(RTree node) throws IOException, ClassNotFoundException {
+        int id = node.id;
+        int fatherId = node.getFather();
         node = null;
+        deleteNode(id, fatherId);
     }
 
-    public static void deleteNode(int nodeId) {
+    public static void deleteNode(int nodeId, int fatherId) throws IOException, ClassNotFoundException {
+        RTree father = readNode(fatherId);
+        father.childrenMBR.remove(nodeId);
+        writeNode(father);
         String filename = nodeId + ".ser";
         File file = new File(filename);
         file.delete();
