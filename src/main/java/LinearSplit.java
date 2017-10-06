@@ -1,3 +1,4 @@
+
 import javax.swing.text.rtf.RTFEditorKit;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
@@ -13,6 +14,8 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
          * está más a la izquierda). Se almacena la separación entre estos lados.
          */
 
+        System.out.println("Splitting node " + nodeId);
+
         RTree node = RTree.readNode(nodeId);
         OverflowHeuristic heuristic = node.getHeuristic();
         int fatherId = node.getFather();
@@ -23,8 +26,6 @@ public class LinearSplit implements OverflowHeuristic, Serializable {
         }
 
         // Para X
-
-        System.out.println("Spliting tree " + node.getId());
 
         Rectangle2D r1_x = node.getRectangles().get(0);
         Rectangle2D r2_x = node.getRectangles().get(node.getRectangles().size() - 1);

@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.io.*;
+import java.lang.instrument.Instrumentation;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Random;
@@ -54,5 +55,6 @@ public class RectangleCreator {
             makeRectangles((long) Math.pow(2, i), 4096, i);
         }
         System.out.println("Made all rects in " + ((System.currentTimeMillis() - t1) / 1000.0) + " time");
+        Instrumentation inst;
     }
 }

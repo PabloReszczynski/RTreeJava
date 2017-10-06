@@ -20,8 +20,6 @@ public class RTree implements Serializable {
     private boolean isLeaf;
 
 
-    // FIXME: Pasar de 2 arreglos a un Map
-
     public RTree (int M, OverflowHeuristic h) {
         this.children = new ArrayList<>();
         this.rectangles = new ArrayList<Rectangle2D>();
@@ -34,6 +32,7 @@ public class RTree implements Serializable {
         this.father = -2;
         isLeaf = true;
     }
+
     public RTree(Envelope env, int M, OverflowHeuristic h, int father) throws IOException, ClassNotFoundException {
         this(rectFromEnvelope(env), M, h, father);
     }
@@ -138,7 +137,6 @@ public class RTree implements Serializable {
                     growth = unionArea - childNodeArea;
                 }
             }
-            System.out.println("Inserting into" + lessGrowthNodeId);
             insert(lessGrowthNodeId, rect);
         }
 
@@ -204,6 +202,8 @@ public class RTree implements Serializable {
 
     // Funciones estaticas
     public static void writeNode(RTree node) throws IOException {
+        IOCount counter = IOCount.getInstance();
+        counter.write();
         String filename = node.id + ".ser";
         FileOutputStream file = new FileOutputStream(filename);
         ObjectOutputStream out = new ObjectOutputStream(file);
@@ -214,13 +214,14 @@ public class RTree implements Serializable {
     }
 
     public static RTree readNode(int id) throws IOException, ClassNotFoundException {
+        IOCount counter = IOCount.getInstance();
+        counter.read();
         String filename = id + ".ser";
         FileInputStream file = new FileInputStream(filename);
         ObjectInputStream in = new ObjectInputStream(file);
         RTree node = (RTree) in.readObject();
         in.close();
         file.close();
-        //System.out.println("node " + id + " read.");
         return node;
     }
 

@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <config>
-    <!-- Cantidad de Bytes en una página-->
-    <M>4096</M>
+    <M>33</M>
 </config>

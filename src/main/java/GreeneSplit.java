@@ -10,6 +10,8 @@ public class GreeneSplit implements OverflowHeuristic, Serializable {
 	@Override
 	public void divideTree(int nodeId) throws IOException, ClassNotFoundException {
 
+	    System.out.println("Splitting node " + nodeId);
+
 	    RTree node = RTree.readNode(nodeId);
 	    int M = node.getM();
 	    int father = node.getFather();
@@ -58,6 +60,7 @@ public class GreeneSplit implements OverflowHeuristic, Serializable {
         }
         
         ArrayList<Rectangle2D> rectangles = new ArrayList<>(node.getRectangles());
+        Collections.sort(rectangles, new RectComp(separacionCorte));
 
         node = null;
 
